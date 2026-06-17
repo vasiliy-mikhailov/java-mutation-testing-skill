@@ -124,6 +124,12 @@ detected, and that the additions are append-only and green.
 ## Gotchas
 - **JUnit 5 + PIT** needs `pitest-junit5-plugin` (§2); without it PIT reports *0 tests* / all
   `NO_COVERAGE`. That symptom means wrong wiring, not bad coverage.
+- **PIT's bundled platform too old for new JUnit** — if the project is on **JUnit 5.11+ / 6.x**
+  (JUnit Platform ≥ 1.11) and baseline PIT shows **0 killed / all `NO_COVERAGE`** despite a green suite,
+  PIT's launcher is too old to run the tests. **Bump `pitest-maven` + `pitest-junit5-plugin` to a current
+  release** (or add a matching `junit-platform-launcher` to the PIT plugin classpath). **Never downgrade the
+  project's own JUnit or dependencies to fit PIT** — that breaks the build for the rest of the module. If a
+  build-config edit does not compile or run, revert it (compile-then-fix).
 - **PIT coverage-minion crash** (`Minion exited abnormally`) = test-instrumentation too old for the
   JDK: raise **Mockito ≥ 5.18** / **ByteBuddy ≥ 1.14.12 (17/21), ≥ 1.17.6 (25)**, or pass the
   project's `--add-opens` to the test fork. EasyMock has no JDK-25 path.

@@ -82,6 +82,11 @@ each, read `<lineNumber>`, `<mutator>`, `<mutatedMethod>`, `<description>`. Muta
 detected / total.
 
 ## 4. Strengthen the suite to catch each survivor — append-only
+**Act early — your turns are limited.** Do *not* read and plan every survivor before writing anything:
+the most common failure is an agent that explores until it runs out of steps and adds **zero** tests
+(score unchanged). Take the **first** survivor, write its test now, run the §5 loop to confirm it, then
+move to the next. One verified test beats a perfect plan you never execute.
+
 For each survivor, open the source at its line, understand **what the mutation changed**, and add a
 **new** test that **fails on the mutant but passes on the real code** (so the suite now detects it).
 Map the mutator to the assertion it needs:

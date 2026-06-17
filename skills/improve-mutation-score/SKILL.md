@@ -84,9 +84,6 @@ Map the mutator to the assertion it needs:
 - Your assertions must **pass against the real (unmutated) code**. A test asserting the *mutant's*
   wrong behaviour fails the green baseline — that's the build telling you the assertion is wrong.
 - Match the existing test class's framework, imports, and style; put new methods in the matching `FooTest`.
-- **No colliding imports.** If a new test needs a type, check the existing `import`s first: never add a
-  second single-type import with the same simple name (e.g. a second `JSONObject`) — Java won't compile it
-  (`collides with another import`). Reuse the type already imported, or use its fully-qualified name inline.
 
 ## 5. The Ralph loop — re-run yourself until the reward stops
 Treat §3→§4→§5 as one loop body and **repeat it on yourself**, Ralph-style, until the reward dries up:
@@ -104,7 +101,12 @@ loop:
 re-reads the *fresh* report, so you always target the survivors that still remain. Stop at the plateau —
 the first full pass that removes **zero** survivors (reward 0).
 
-**Definition of done — never skip the re-run.** You are *not* finished until a re-run of the scoped PIT is **green** and the score **rose**. Editing tests and stopping without that re-run is the most common way to fail: a broken build (a bad/duplicate import, a typo) goes unseen and the whole run is discarded as BROKE_BUILD. If your last edit is not verified green, either fix it or revert it before you stop.
+**Definition of done — compile, and if it doesn't compile, fix the tests.** After every edit, recompile
+(the §5 PIT re-run does this, or run `test-compile` directly). **If it doesn't compile, read the compiler
+error and fix the offending test** — a bad or duplicate import, a typo, the wrong type — or drop that one
+test, then compile again. Loop until it compiles. You are *not* finished until the scoped PIT re-runs
+**green** and the score **rose**; stopping on an unverified or non-compiling edit gets the whole run
+discarded as BROKE_BUILD.
 
 ## 6. Don't chase equivalent mutants
 Some survivors are **equivalent** — the mutation produces semantically identical behaviour, so **no**

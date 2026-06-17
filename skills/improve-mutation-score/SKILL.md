@@ -15,6 +15,8 @@ Work on **one class at a time** (whole-repo mutation is far too slow). Standard 
 build's PIT plugin and `git`. (PIT labels a detected mutant `KILLED` in its report — that's the
 tool's vocabulary; our job is to make the suite *catch* what it currently misses.)
 
+**The reward you maximize: +1 for every mutant your new tests make the suite detect** (`killed_after − killed_before`). Drive it with the loop in §5 — each pass adds tests and re-scores; keep going while the reward stays positive.
+
 ## 0. Preconditions
 - **Detect and use the right JDK FIRST** — follow the **`detect-java-version`** skill. A project's
   real build floor can exceed its declared target, and PIT's forked coverage minion crashes under
@@ -83,10 +85,21 @@ Map the mutator to the assertion it needs:
   wrong behaviour fails the green baseline — that's the build telling you the assertion is wrong.
 - Match the existing test class's framework, imports, and style; put new methods in the matching `FooTest`.
 
-## 5. Confirm the lift
-Re-run the scoped PIT from §2. **Keep the additions only if** PIT runs clean (all tests green) and
-the **mutation score went up**. If a new test won't compile or is red, fix it or drop it — never
-leave the suite red. Iterate §3–§5 until the score stops rising.
+## 5. The Ralph loop — re-run yourself until the reward stops
+Treat §3→§4→§5 as one loop body and **repeat it on yourself**, Ralph-style, until the reward dries up:
+
+```
+loop:
+  re-run the scoped PIT from §2          # produces a fresh mutations.xml
+  reward = killed_now - killed_prev      # +1 for each newly-detected mutant this pass
+  if PIT is red (a new test failed)  -> fix or drop that test; never leave the suite red
+  if reward == 0 on this pass        -> STOP (only equivalent / untestable survivors remain — see §6)
+  else                               -> read the still-SURVIVED mutants (§3), add tests (§4), continue
+```
+
+**Keep the additions only if** PIT runs clean (all tests green) and the mutation score rose. Each pass
+re-reads the *fresh* report, so you always target the survivors that still remain. Stop at the plateau —
+the first full pass that adds **zero** new detections (reward 0).
 
 ## 6. Don't chase equivalent mutants
 Some survivors are **equivalent** — the mutation produces semantically identical behaviour, so **no**

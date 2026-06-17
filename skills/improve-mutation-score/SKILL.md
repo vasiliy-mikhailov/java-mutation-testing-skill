@@ -27,8 +27,9 @@ tool's vocabulary; our job is to make the suite *catch* what it currently misses
 - **Green baseline.** PIT refuses to run if any in-scope test already fails. Confirm the suite is
   green first; tests already red in the baseline (no DB/network/Docker) are **not** your concern —
   scope PIT away from them.
-- **Detect the test framework:** JUnit 5 (`org.junit.jupiter`) vs JUnit 4 vs TestNG — it changes how
-  PIT is wired (§2) and how you write the new tests.
+- **Detect the test framework and version:** JUnit 4 vs JUnit 5 vs **JUnit 6** (both Jupiter — check the
+  jupiter **version**: `>= 6.0` is JUnit 6 and needs different PIT wiring) vs TestNG — the framework changes
+  how PIT is wired (§2) and how you write the new tests.
 - `git` — commit a baseline first so your additions are an isolated diff.
 
 ## 1. Pick one target class
@@ -54,6 +55,23 @@ add a plugin dependency):
     <artifactId>pitest-junit5-plugin</artifactId><version>1.2.1</version></dependency></dependencies>
 </plugin>
 ```
+**Maven, JUnit 6** — JUnit 6 unified its versioning, so `junit-platform-*` share the **jupiter version**
+(e.g. `6.1.0`). PIT's older bundled launcher then mismatches the project's engine (`OutputDirectoryCreator
+not available; unaligned junit-platform-engine/launcher`). Use a **current** PIT + `pitest-junit5-plugin`,
+and pin a `junit-platform-launcher` to the project's platform version so engine == launcher:
+```xml
+<plugin><groupId>org.pitest</groupId><artifactId>pitest-maven</artifactId><version>1.25.4</version>
+  <dependencies>
+    <dependency><groupId>org.pitest</groupId><artifactId>pitest-junit5-plugin</artifactId><version>1.2.3</version></dependency>
+    <dependency><groupId>org.junit.platform</groupId><artifactId>junit-platform-launcher</artifactId><version>6.1.0</version></dependency>
+  </dependencies>
+</plugin>
+```
+**TestNG** — PIT runs it without the junit5 plugin; use the bare `mutationCoverage` goal like JUnit 4.
+
+Inject the plugin into the project's **main `<build>`**, never a `<profile>` build — a plugin inside an
+inactive profile is silently ignored and PIT runs with no engine (0 coverage).
+
 **Gradle** — apply `info.solidsoft.pitest` (+ `junit5PluginVersion` for JUnit 5), scope it, `./gradlew pitest`.
 
 Report lands at `target/pit-reports/mutations.xml` (Maven) or `build/reports/pitest/mutations.xml`.

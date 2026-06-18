@@ -36,7 +36,8 @@ The version is often **not** a literal next to the dependency:
 ## 4. JUnit generations (how the version maps to the platform)
 - **JUnit 5** — Jupiter `5.x`, JUnit **Platform `1.x`** (offset: Jupiter `5.11` ↔ Platform `1.11`).
 - **JUnit 6** — versioning **unified**: `junit-jupiter`, `junit-platform-*`, `junit-vintage` all share the
-  **same** version (e.g. `6.1.0` → the platform is also `6.1.0`, not `1.x`).
+  **same** version (e.g. `6.1.0` → the platform is also `6.1.0`, not `1.x`). JUnit 6 also has a **Java 17
+  baseline** — the project needs JDK ≥ 17 (coordinate with `detect-java-version`).
 
 ## 5. Wire PIT to the framework (Maven)
 - **JUnit 4** → bare goal, no plugin: `org.pitest:pitest-maven:<v>:mutationCoverage`.
@@ -45,7 +46,8 @@ The version is often **not** a literal next to the dependency:
 - **JUnit 6** → a **current** `pitest-maven` (≥ 1.19.4, e.g. `1.25.4`) + `pitest-junit5-plugin` `1.2.3`
   **plus** an explicit `junit-platform-launcher` pinned to the **platform version** (== the Jupiter
   version, e.g. `6.1.0`) so engine == launcher. Auto-selection does **not** cover JUnit 6's new scheme.
-- **TestNG** → bare goal; PIT runs TestNG natively (no junit5 plugin).
+- **TestNG** → add **`pitest-testng-plugin`** (`org.pitest:pitest-testng-plugin:1.0.0`, needs pitest ≥ 1.9.0)
+  to the PIT plugin's `<dependencies>` — current PIT **externalized** TestNG, so it is no longer built-in.
 
 Inject the plugin into the project's **main `<build>`**, never a `<profile>` build (a plugin in an
 inactive profile is silently ignored → PIT runs with no engine). *(Gradle: apply `info.solidsoft.pitest`,

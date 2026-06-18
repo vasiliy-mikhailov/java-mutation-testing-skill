@@ -87,6 +87,12 @@ the most common failure is an agent that explores until it runs out of steps and
 (score unchanged). Take the **first** survivor, write its test now, run the §5 loop to confirm it, then
 move to the next. One verified test beats a perfect plan you never execute.
 
+**Kill the cheap survivors first — `NO_COVERAGE` before `SURVIVED`.** Split the survivors into two piles:
+`NO_COVERAGE` (the line never runs — no test even calls it) and `SURVIVED` (the line runs but nothing
+asserts on it). Go after **`NO_COVERAGE` first**: it is usually the *larger* pile and the *easiest* drop —
+just call the method with representative inputs and assert the result, and a whole cluster of survivors on
+that method falls at once. Only then spend effort on `SURVIVED`, where you need a sharper assertion.
+
 For each survivor, open the source at its line, understand **what the mutation changed**, and add a
 **new** test that **fails on the mutant but passes on the real code** (so the suite now detects it).
 Map the mutator to the assertion it needs:
@@ -120,6 +126,13 @@ loop:
   else                               -> read the still-SURVIVED mutants (§3), add tests (§4), continue
 ```
 
+**Make the loop cheap so you can be exhaustive:** add **`-DwithHistory=true`** to your iterative PIT
+re-runs. PIT caches results for unchanged production code + tests and only re-evaluates the mutants your
+new tests could affect — often **10-50x faster** per pass, since you only ever *add* tests (the code never
+changes). That speed is what lets you keep going until the survivor count really bottoms out instead of
+quitting early. (`withHistory` is experimental — do your **final** confirming run *without* it for an
+honest score.)
+
 **Keep the additions only if** PIT runs clean (all tests green) and the mutation score rose. Each pass
 re-reads the *fresh* report, so you always target the survivors that still remain. Stop at the plateau —
 the first full pass that removes **zero** survivors (reward 0).
@@ -131,11 +144,17 @@ test, then compile again. Loop until it compiles. You are *not* finished until t
 **green** and the score **rose**; stopping on an unverified or non-compiling edit gets the whole run
 discarded as BROKE_BUILD.
 
-## 6. Don't chase equivalent mutants
-Some survivors are **equivalent** — the mutation produces semantically identical behaviour, so **no**
-test can detect them (a mutated branch with no observable effect, a redundant boundary on an
-unreachable value, reordered commutative ops). Recognize the pattern and **move on**. A class rarely
-reaches 100%; stop when the remaining survivors are equivalent or genuinely untestable.
+## 6. Equivalent mutants are RARE — earn the right to skip one
+A truly **equivalent** mutant (semantically identical behaviour — no test can detect it: a branch with no
+observable effect, a redundant boundary on an unreachable value, reordered commutative ops) is the *rare*
+exception, not the explanation for a stuck survivor. **Most survivors are killable** — they just need the
+right input or to be reached at all. Before you write a survivor off as equivalent, actually try: feed an
+input that exercises the exact mutated branch/value and assert the differing output; reach an unreached
+method (`NO_COVERAGE`); mock a collaborator to observe a `VoidMethodCall` side effect. Only after a genuine
+differentiating attempt fails do you set it aside — and say so. Do **not** end the §5 loop on the first
+`reward == 0` pass if you have not yet tried a *fresh* approach on the survivors that remain; the goal is
+the **lowest survivor count you can reach**, not the first plateau. 100% is rare, but get as close as the
+non-equivalent survivors allow.
 
 ## 7. Open a PR
 Branch, commit the **append-only** test additions (plus the PIT build config if added for JUnit 5),

@@ -198,9 +198,10 @@ factor (2 broken → 0.81, 5 broken → 0.59). The rules:
 | 4 | no-adnt-only | a `@Test` whose only check is `assertDoesNotThrow` / try-catch-`fail` — assert the real result |
 | 5 | deterministic | `Thread.sleep`, unseeded `new Random()`, wall-clock, real network / file IO |
 | 6 | no-disabled | adds `@Disabled` / `@Ignore` |
-| 7 | additive-only | removes or edits any existing line (see §4) |
-| 8 | green | a test does not compile or fails |
-| 9 | mutation-improving | mutant kills did not strictly rise vs the baseline |
+| 7 | no-unused-code | leaves an unused import or unused private field — drop the dead declaration |
+| 8 | additive-only | removes or edits any existing line (see §4) |
+| 9 | green | a test does not compile or fails |
+| 10 | mutation-improving | mutant kills did not strictly rise vs the baseline |
 
 **This is part of the §5 loop, not a final gate.** Each pass, once PIT is green, run the checker and treat
 every FAILED rule as more work. Fix each broken rule **without losing a kill** — rewrite the offending test

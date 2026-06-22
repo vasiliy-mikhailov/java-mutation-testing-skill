@@ -16,10 +16,11 @@ Static rules (from the file alone):
   4 no-adnt-only       no @Test whose only check is assertDoesNotThrow / try-catch-fail
   5 deterministic      no sleep / unseeded Random / wall-clock / real network/IO
   6 no-disabled        no @Disabled / @Ignore added
-  7 additive-only      (needs --baseline) no existing line removed
+  7 no-unused-code     no unused import / unused private field we added
+  8 additive-only      (needs --baseline) no existing line removed
 Dynamic rules (need build inputs):
-  8 green              (needs --green true|false) all tests compile and pass
-  9 mutation-improving (needs --mut-before N --mut-after M) kills strictly increased
+  9 green              (needs --green true|false) all tests compile and pass
+ 10 mutation-improving (needs --mut-before N --mut-after M) kills strictly increased
 
 Rules with missing inputs are reported n/a and excluded from the count.
 """
@@ -82,6 +83,31 @@ def non_adnt_assert(body):
     # an assertion that is not assertDoesNotThrow
     return bool(re.search(ASSERT, re.sub(r'assertDoesNotThrow', 'XXX', body)))
 
+def unused_code(src, baseline):
+    """Imports we ADDED whose type never appears in the body, and private fields we
+    ADDED that are referenced only at their declaration. Conservative (no false
+    positives): if baseline given, only lines we introduced are judged."""
+    base = set(baseline.splitlines()) if baseline else set()
+    body = re.sub(r'(?m)^\s*import\s.*;', '', src)  # strip imports before counting refs
+    issues = []
+    for m in re.finditer(r'(?m)^\s*import\s+(?!static\b)([\w.]+)\s*;', src):
+        if m.group(0).rstrip() in base:            # pre-existing, not ours
+            continue
+        fqn = m.group(1)
+        if fqn.endswith(".*"):
+            continue
+        simple = fqn.rsplit(".", 1)[-1]
+        if not re.search(r'\b' + re.escape(simple) + r'\b', body):
+            issues.append("import " + simple)
+    for m in re.finditer(r'\bprivate\s+(?:static\s+)?(?:final\s+)?[\w.$<>,\[\]\s]+?\b(\w+)\s*[=;]', src):
+        line = src[src.rfind("\n", 0, m.start()) + 1: src.find("\n", m.start())]
+        if line in base:
+            continue
+        name = m.group(1)
+        if len(re.findall(r'\b' + re.escape(name) + r'\b', src)) <= 1:
+            issues.append("field " + name)
+    return issues
+
 def evaluate(path, baseline_path, green, mut_before, mut_after):
     src = read(path)
     if src is None:
@@ -115,24 +141,28 @@ def evaluate(path, baseline_path, green, mut_before, mut_after):
     rules.append(("6", "no-disabled", "fail" if dis else "pass",
                   f"disabled: {sorted(set(dis))}" if dis else ""))
 
+    dead = unused_code(src, baseline)
+    rules.append(("7", "no-unused-code", "fail" if dead else "pass",
+                  f"unused: {dead}" if dead else ""))
+
     if baseline is None:
-        rules.append(("7", "additive-only", "na", "pass --baseline to check"))
+        rules.append(("8", "additive-only", "na", "pass --baseline to check"))
     else:
         removed = [l for l in baseline.splitlines() if l.strip() and l not in set(src.splitlines())]
-        rules.append(("7", "additive-only", "fail" if removed else "pass",
+        rules.append(("8", "additive-only", "fail" if removed else "pass",
                       f"{len(removed)} baseline line(s) removed" if removed else ""))
 
     if green is None:
-        rules.append(("8", "green", "na", "pass --green true|false"))
+        rules.append(("9", "green", "na", "pass --green true|false"))
     else:
-        rules.append(("8", "green", "pass" if green else "fail",
+        rules.append(("9", "green", "pass" if green else "fail",
                       "" if green else "tests do not compile/pass"))
 
     if mut_before is None or mut_after is None:
-        rules.append(("9", "mutation-improving", "na", "pass --mut-before N --mut-after M"))
+        rules.append(("10", "mutation-improving", "na", "pass --mut-before N --mut-after M"))
     else:
         ok = mut_after > mut_before
-        rules.append(("9", "mutation-improving", "pass" if ok else "fail",
+        rules.append(("10", "mutation-improving", "pass" if ok else "fail",
                       f"kills {mut_before} -> {mut_after}" + ("" if ok else " (no gain)")))
 
     broken = [r for r in rules if r[2] == "fail"]

@@ -187,8 +187,9 @@ python skills/improve-mutation-score/reward.py <TestFile> \
     --baseline <upstream copy of the file> --green true --mut-before <N> --mut-after <M>
 ```
 
-**reward = 0.9 ^ (number of broken rules)** — `1.0` means nothing broken; each broken rule costs a 0.9
-factor (2 broken → 0.81, 5 broken → 0.59). The rules:
+**reward = 0.9 ^ (penalty)** — `1.0` means nothing broken; each broken binary rule costs 1 penalty (a 0.9
+factor), and **unused code (rule 7) costs 1 penalty per LINE** — a one-line dead import barely dents the
+reward, a 15-line dead method (0.9^15 ≈ 0.21) tanks it. The rules:
 
 | # | rule | broken when |
 |---|---|---|
@@ -198,7 +199,7 @@ factor (2 broken → 0.81, 5 broken → 0.59). The rules:
 | 4 | no-adnt-only | a `@Test` whose only check is `assertDoesNotThrow` / try-catch-`fail` — assert the real result |
 | 5 | deterministic | `Thread.sleep`, unseeded `new Random()`, wall-clock, real network / file IO |
 | 6 | no-disabled | adds `@Disabled` / `@Ignore` |
-| 7 | no-unused-code | leaves an unused import or unused private field — drop the dead declaration |
+| 7 | no-unused-code | leaves dead code — unused import / private field / private method; **penalty = number of unused lines** |
 | 8 | additive-only | removes or edits any existing line (see §4) |
 | 9 | green | a test does not compile or fails |
 | 10 | mutation-improving | mutant kills did not strictly rise vs the baseline |

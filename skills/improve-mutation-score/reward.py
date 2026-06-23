@@ -27,7 +27,7 @@ Dynamic rules (need build inputs):
 
 Rules with missing inputs are reported n/a and excluded from the count.
 """
-import argparse, json, re, sys
+import argparse, difflib, json, re, sys
 
 def read(p):
     try:
@@ -36,11 +36,18 @@ def read(p):
         return None
 
 def added_region(src, baseline):
-    """Lines present in src but not in baseline (the contribution)."""
+    """The lines WE added, as CONTIGUOUS blocks (so methods stay parseable). A plain
+    set-difference scrambles structure and, when it yields no parseable method, the old
+    code fell back to judging the whole file — penalizing us for UPSTREAM warts. difflib
+    keeps the inserted/replaced blocks intact and in order, so only our additions judge."""
     if baseline is None:
         return src
-    base = set(baseline.splitlines())
-    return "\n".join(l for l in src.splitlines() if l not in base)
+    a, b = baseline.splitlines(), src.splitlines()
+    out = []
+    for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, a, b, autojunk=False).get_opcodes():
+        if tag in ("insert", "replace"):
+            out.extend(b[j1:j2])
+    return "\n".join(out)
 
 def test_methods(src):
     """[(name, body)] for each @Test method, via brace matching."""
@@ -142,7 +149,7 @@ def evaluate(path, baseline_path, green, mut_before, mut_after):
         print(f"cannot read {path}", file=sys.stderr); sys.exit(2)
     baseline = read(baseline_path) if baseline_path else None
     region = added_region(src, baseline)
-    methods = test_methods(region) or test_methods(src)
+    methods = test_methods(region)  # region == src when baseline is None; only OUR methods otherwise
     rules = []  # (id, name, status: pass/fail/na, detail, penalty)
     def add(i, name, fail, detail, penalty=None):
         # binary rules cost 1 when broken; a weighted rule passes its own penalty

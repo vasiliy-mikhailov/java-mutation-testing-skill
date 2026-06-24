@@ -25,6 +25,7 @@ Dynamic rules (need build inputs):
   9 green              (needs --green true|false) all tests compile and pass
  10 mutation-improving (needs --mut-before N --mut-after M) kills strictly increased
  11 no-partial-assert  no @Test that validates a string via substring match (assert the full value)
+ 12 no-trivial-accessor-test  no pure getter/setter/equals/hashCode/toString test (keep real logic)
 
 Rules with missing inputs are reported n/a and excluded from the count.
 """
@@ -214,6 +215,21 @@ def evaluate(path, baseline_path, green, mut_before, mut_after):
         return any(vs.count(v) >= 2 for v in set(vs))
     partial = [n for n, b, a in methods if piecemeal(b)]
     add("11", "no-partial-assert", bool(partial), f"piecemeal substring validation (assert full value): {partial}")
+
+    # trivial getter/setter/equals/hashCode/toString tests — maintainers see these as noise (the
+    # mutation gate rewards killing accessor mutants cheaply). Keep only tests with real logic.
+    # A getter/setter test is spared if its body has logic (exception/validation/collaboration).
+    LOGIC = re.compile(r'assertThrows|assertThatThrownBy|\.isInstanceOf|\bfail\s*\(|Exception|Throws|Validates|\bverify\s*\(|Mockito', re.I)
+    def trivial(n, b):
+        nl = n.lower()
+        if any(k in nl for k in ("equals", "hashcode", "tostring")):
+            return True
+        if (nl.startswith(("testget", "testset")) or "getter" in nl or "setter" in nl) and not LOGIC.search(b):
+            return True
+        return False
+    accessor = [n for n, b, a in methods if trivial(n, b)]
+    add("12", "no-trivial-accessor-test", bool(accessor),
+        f"trivial getter/setter/equals/hashCode/toString tests ({len(accessor)}): {accessor[:8]}")
 
     broken = [r for r in rules if r[2] == "fail"]
     evaluated = [r for r in rules if r[2] != "na"]

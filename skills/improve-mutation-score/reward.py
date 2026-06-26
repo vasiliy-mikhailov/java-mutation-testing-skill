@@ -28,6 +28,7 @@ Static rules (from the file alone) -- penalty = lines of offending test code:
  11 no-partial-assert  no @Test that validates a string via substring match (assert the full value)
  12 no-trivial-accessor-test  no pure getter/setter/equals/hashCode/toString test (keep real logic)
  13 no-inner-class     no nested / @Nested / helper class declared in the test (keep tests flat)
+ 14 no-comment-spam    standalone comment lines <= 1 per 4 code lines (no what-not-why narration)
 Dynamic rules (need build inputs) -- binary build outcomes (penalty 0/1):
   9 green              (needs --green true|false) all tests compile and pass
  10 mutation-improving (needs --mut-before N --mut-after M) kills strictly increased
@@ -120,6 +121,33 @@ def _brace_end(src, brace):
 
 def _line_at(src, pos):
     return src[src.rfind("\n", 0, pos) + 1: src.find("\n", pos) if src.find("\n", pos) != -1 else len(src)]
+
+def _comment_spam(region):
+    """Count FULL-LINE comments vs code lines in the added region, and the lines OVER the
+    1-comment-per-4-code-lines budget. A trailing `assertX(...); // why` is a code line, not a
+    comment line, so good why-comments on assertions are never penalized -- only standalone
+    comment lines (//, /* */ blocks, javadoc * continuations) that out-pace the code count."""
+    comment_lines = code_lines = 0
+    in_block = False
+    for raw in region.splitlines():
+        s = raw.strip()
+        if in_block:
+            comment_lines += 1
+            if "*/" in s:
+                in_block = False
+            continue
+        if not s:
+            continue
+        if s.startswith("//") or s.startswith("*"):
+            comment_lines += 1
+        elif s.startswith("/*"):
+            comment_lines += 1
+            if "*/" not in s:
+                in_block = True
+        else:
+            code_lines += 1
+    penalty = max(0, comment_lines - code_lines // 4)  # budget: 1 comment line per 4 code lines
+    return comment_lines, code_lines, penalty
 
 def unref(src, name):
     """name appears only at its own declaration (referenced nowhere else)."""
@@ -243,6 +271,11 @@ def evaluate(path, baseline_path, green, mut_before, mut_after):
         inner_lines += region.count("\n", m.start(), e) + 1
         inner_names.append(m.group(1))
     add("13", "no-inner-class", inner_lines, f"inner classes {inner_names}: {inner_lines} line(s)")
+
+    # no comment-spam -- standalone comment lines may not out-pace code more than 1 per 4 code lines.
+    cmt, code, over = _comment_spam(region)
+    add("14", "no-comment-spam", over,
+        f"{cmt} comment line(s) vs {code} code line(s) -> {over} over the 1:4 budget")
 
     broken = [r for r in rules if r[2] == "fail"]
     evaluated = [r for r in rules if r[2] != "na"]

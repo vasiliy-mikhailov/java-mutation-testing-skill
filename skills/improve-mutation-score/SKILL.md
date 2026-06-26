@@ -210,6 +210,7 @@ binary (1 penalty) and act as prerequisites the PR gate requires anyway. Penalti
 | 11 | no-partial-assert | validates one string **piecemeal** — ≥2 substring checks (`assertTrue(url.contains("&p=v"))`) on the same variable; assert the full value with `assertEquals` instead |
 | 12 | no-trivial-accessor-test | pure getter/setter/`equals`/`hashCode`/`toString` tests — maintainers see these as noise; keep only tests with real logic (validation, exceptions, behaviour) |
 | 13 | no-inner-class | declares a nested / `@Nested` / helper class inside the test — keep tests flat; lift fixtures to the public API or a top-level test helper |
+| 14 | no-comment-spam | standalone comment lines out-pace code more than **1 per 4 code lines** — comment *why*, not *what*; the assertions are the documentation. Trailing `// why` on a code line is fine (it's a code line, not a comment line); penalty = comment lines over the 1:4 budget |
 
 **This is part of the §5 loop, not a final gate.** Each pass, once PIT is green, run the checker and treat
 every FAILED rule as more work. Fix each broken rule **without losing a kill** — rewrite the offending test

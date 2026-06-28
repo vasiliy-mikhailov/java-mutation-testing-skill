@@ -2,8 +2,8 @@
   "name": "java-mutation-testing",
   "owner": { "name": "Vasiliy Mikhailov", "url": "https://github.com/vasiliy-mikhailov" },
   "metadata": {
-    "description": "Portable Agent Skills that raise a Maven/Gradle project PIT mutation score: detect the JDK the project needs, find mutants the tests run but do not verify, and add append-only tests that detect them without weakening any existing test — then score each test against a pure-LLM mergeability rubric (fourteen machine-checkable quality rules, line-weighted, no runtime required) so the additions are clean enough to upstream.",
-    "version": "0.8.0"
+    "description": "Portable Agent Skills that raise a Maven/Gradle project PIT mutation score: detect the JDK the project needs, find mutants the tests run but do not verify, and add append-only tests that detect them without weakening any existing test, then score each test against a pure-LLM mergeability rubric (fourteen machine-checkable quality rules, line-weighted, no runtime required) so the additions are clean enough to upstream.",
+    "version": "0.9.0"
   },
   "plugins": [
     {

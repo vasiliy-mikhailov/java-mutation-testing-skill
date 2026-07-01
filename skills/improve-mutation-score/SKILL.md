@@ -169,14 +169,14 @@ Workflow:
 4. When every method is done, run ONE whole-class PIT (no `withHistory`) to confirm the overall score rose and
    ALL tests compile + are green. If the build is broken, delegate the fix to a sub-agent (hand it the javac
    errors).
-5. **JUDGE the result with a SEPARATE sub-agent -- never score your own tests (§6).** Spawn a fresh sub-agent
-   that did NOT write these tests and shares none of your context; give it only the test class and the §6
-   rubric and have it score the added diff. Act on ITS reward, not your own opinion. If the reward is below
-   `1.0`, delegate fixes for the offending lines to a writer sub-agent (without dropping a kill) and re-judge,
-   until the judge returns `1.0`.
-6. You are done when the whole-class build is green, the mutation score is up, AND the judge's reward is `1.0`.
-For a tiny class (1-3 methods) just write the tests yourself, then STILL spawn a separate judge to score them
-(never grade your own work); the delegation overhead only pays off past
+5. Have the result scored by a separate sub-agent, not by your own opinion (§6). A self-score earns nothing
+   here: the reward that counts comes from a fresh sub-agent that did not write these tests and shares none of
+   your context. Give it the test class and the §6 rubric and let it score the added diff. If its reward is
+   below `1.0`, delegate fixes for the offending lines to a writer sub-agent (without dropping a kill) and
+   re-judge until the judge reaches `1.0`.
+6. You are done when the whole-class build is green, the mutation score is up, and the judge's reward is `1.0`.
+For a tiny class (1-3 methods) just write the tests yourself, then still hand them to a separate judge to
+score (a self-score earns nothing); the delegation overhead only pays off past
 one context's worth of work.
 
 **Make the loop cheap so you can be exhaustive:** add **`-DwithHistory=true`** to your iterative PIT
@@ -202,7 +202,7 @@ Mutation score makes a test **strong**; it does not make it **mergeable**. Maint
 reach into internals, assert nothing, or flake, so "avoid that wart" is empty advice unless breaking it
 **costs reward**. **The agent that wrote the tests never scores them** -- grading your own work while you
 are driven to finish is a conflict of interest that inflates the score. A **separate judge sub-agent**, one
-that did NOT write the tests and shares none of your context, scores them instead. This
+that did not write the tests and shares none of your context, scores them instead. This
 skill ships as a pure rubric: the environment may have no Python, no install step, nothing but a fresh model
 and the file, so the judge is just another sub-agent applying the rules below. The judge reads the test diff
 **the writer added** (compare against the upstream copy of the file so pre-existing code is never counted),
@@ -234,6 +234,8 @@ against the upstream baseline, never pre-existing upstream code. The rules:
 | 13 | no-inner-class | declares a nested / `@Nested` / helper class inside the test; keep tests flat; lift fixtures to the public API or a top-level test helper |
 | 14 | no-comment-spam | standalone comment lines out-pace code more than **1 per 4 code lines**; comment *why*, not *what*; the assertions are the documentation. Trailing `// why` on a code line is fine (it's a code line, not a comment line); penalty = comment lines over the 1:4 budget |
 | 15 | no-tooling-exhaust-comments | a comment names a PIT mutant operator (`InlineConstant`, `NonVoidMethodCall`, `NO_COVERAGE`, `EQUAL_ELSE`), says "kills the surviving mutant", or hardcodes a production line number (`at line 99-105`, `on line 58`); these document the tool and rot when the source shifts. State the behaviour under test instead (e.g. "charset comes from Content-Encoding when Content-Type is absent"); penalty = offending comment lines |
+| 16 | no-thin-delegator | the class under test is a trivial wrapper whose real logic lives in another class (e.g. `PathNaturalOrderComparator` just delegates to `NaturalOrderComparator`); its tests belong on the delegate. Confirm the class has real branching of its own before testing it directly: **binary** |
+| 17 | repo-idiomatic | the added tests do not match the target repo's own conventions. Before writing, read the repo's CONTRIBUTING and one existing test in the same module, then follow its assertion library, structure, naming, and any given/when/then. A green compile plus checkstyle and spotless is necessary but not sufficient: assertj #4310 built clean yet was closed for missing given/when/then; penalty = lines that diverge from the module idiom |
 
 **This is part of the §5 loop, not a final gate.** Each pass, once PIT is green, re-judge the test against
 the rubric and treat every FAILED rule as more work. Fix each broken rule **without losing a kill**:

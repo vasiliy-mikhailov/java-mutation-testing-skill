@@ -33,10 +33,13 @@ tool's vocabulary. The goal is to make the suite *catch* what it currently misse
 - `git`: commit a baseline first so your additions are an isolated diff.
 
 ## 1. Pick one target class
+- If the harness names a class, use exactly that one (it may already have a `FooTest`, or none yet).
 - **Coverage first**: a class with **high line coverage but low mutation score** is the richest
   target: the tests run it but don't assert on it.
-- Otherwise pick a **logic-dense** class (branches, arithmetic, parsing, state) that has an existing
-  `FooTest`. Skip trivial getters/DTOs.
+- An **untested** logic-dense class (branches, arithmetic, parsing, state) is just as good a target:
+  it baselines at all-`NO_COVERAGE` (every mutant survives), and you raise the score by writing its
+  first test from scratch (§4).
+- Skip trivial getters/DTOs/enums: they have nothing to mutate, so PIT finds no survivors.
 
 Let `C` = fully-qualified class, `T` = its test class or package glob.
 
@@ -125,6 +128,9 @@ Map the mutator to the assertion it needs:
 - Your assertions must **pass against the real (unmutated) code**. A test asserting the *mutant's*
   wrong behaviour fails the green baseline: that's the build telling you the assertion is wrong.
 - Match the existing test class's framework, imports, and style; put new methods in the matching `FooTest`.
+  If the class has **no test yet**, CREATE `FooTest` following a sibling test in the same module (its
+  assertion library, imports, naming, package layout), then add methods to it, the same append-only
+  discipline starting from an empty test.
 
 ## 5. The Ralph loop: re-run yourself until the reward stops
 Treat §3→§4→§5 as one loop body and **repeat it on yourself**, Ralph-style, until the reward dries up:

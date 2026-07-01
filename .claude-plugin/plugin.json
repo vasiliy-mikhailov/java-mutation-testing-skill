@@ -1,17 +1,17 @@
 {
-  "name": "java-mutation-testing",
+  "name": "improve-java-tests",
   "owner": { "name": "Vasiliy Mikhailov", "url": "https://github.com/vasiliy-mikhailov" },
   "metadata": {
     "description": "Portable Agent Skills that raise a Maven/Gradle project PIT mutation score: detect the JDK the project needs, find mutants the tests run but do not verify, and add append-only tests that detect them without weakening any existing test, then score each test against a pure-LLM mergeability rubric (fourteen machine-checkable quality rules, line-weighted, no runtime required) so the additions are clean enough to upstream.",
-    "version": "0.13.0"
+    "version": "0.14.0"
   },
   "plugins": [
     {
-      "name": "java-mutation-testing",
+      "name": "improve-java-tests",
       "source": "./",
       "description": "Detect the project Java version, then raise its PIT mutation score with append-only tests that pass a pure-LLM mergeability rubric (standard tools only, no runtime dependency).",
       "strict": false,
-      "skills": ["./skills/detect-java-version", "./skills/detect-unit-testing-framework", "./skills/improve-mutation-score"]
+      "skills": ["./skills/detect-java-version", "./skills/detect-unit-testing-framework", "./skills/improve-java-tests"]
     }
   ]
 }

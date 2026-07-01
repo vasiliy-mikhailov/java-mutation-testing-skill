@@ -1,4 +1,4 @@
-# java-mutation-testing-skill
+# improve-java-tests-skill
 
 Portable [Agent Skills](https://agentskills.io/) that make a coding agent **raise a Java
 (Maven or Gradle) project's PIT mutation score**: find the code its tests *run* but don't
@@ -17,8 +17,8 @@ These skills turn that signal into stronger tests.
   every command under it. A forked test JVM (Surefire, **PIT**, JaCoCo) crashes under the wrong JDK.
 - **`detect-unit-testing-framework`**: determine which unit-testing framework the project uses
   (JUnit 4, JUnit 5, TestNG) and how it is wired into the build, so new tests are written in the
-  right style and the PIT run is configured correctly. `improve-mutation-score` depends on this.
-- **`improve-mutation-score`**: run PIT scoped to one logic-dense class, read the surviving mutants,
+  right style and the PIT run is configured correctly. `improve-java-tests` depends on this.
+- **`improve-java-tests`**: run PIT scoped to one logic-dense class, read the surviving mutants,
   and add **append-only** JUnit tests that make the suite detect them by asserting the *correct* behaviour,
   keeping the additions only if every previously-passing test still passes. Includes a mutator->assertion playbook and
   the JUnit5 / test-instrumentation (Mockito, ByteBuddy, `--add-opens`) gotchas.
@@ -27,14 +27,14 @@ These skills turn that signal into stronger tests.
 
 **Claude Code**: add this repo as a plugin marketplace, then install:
 ```
-/plugin marketplace add vasiliy-mikhailov/java-mutation-testing-skill
-/plugin install java-mutation-testing
+/plugin marketplace add vasiliy-mikhailov/improve-java-tests-skill
+/plugin install improve-java-tests
 ```
 
 **OpenHands**: copy the skills where it reads them:
 ```
 mkdir -p <your-project>/.openhands/skills
-cp -r skills/detect-java-version skills/detect-unit-testing-framework skills/improve-mutation-score <your-project>/.openhands/skills/
+cp -r skills/detect-java-version skills/detect-unit-testing-framework skills/improve-java-tests <your-project>/.openhands/skills/
 ```
 
 **opencode**: drop the skills in and reference them from your `AGENTS.md`.
@@ -42,7 +42,7 @@ cp -r skills/detect-java-version skills/detect-unit-testing-framework skills/imp
 **Kilo Code**: copy the skills in, or install from the Kilo Marketplace.
 
 **Any agent**: point it at the files: *"follow `skills/detect-java-version/SKILL.md`, then
-`skills/detect-unit-testing-framework/SKILL.md`, then `skills/improve-mutation-score/SKILL.md` to
+`skills/detect-unit-testing-framework/SKILL.md`, then `skills/improve-java-tests/SKILL.md` to
 raise this project's mutation score."*
 
 ## How it works

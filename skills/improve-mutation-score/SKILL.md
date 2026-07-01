@@ -169,8 +169,14 @@ Workflow:
 4. When every method is done, run ONE whole-class PIT (no `withHistory`) to confirm the overall score rose and
    ALL tests compile + are green. If the build is broken, delegate the fix to a sub-agent (hand it the javac
    errors).
-5. You are done when the whole-class build is green and the mutation score is up.
-For a tiny class (1-3 methods) just write the tests yourself; the delegation overhead only pays off past
+5. **JUDGE the result with a SEPARATE sub-agent -- never score your own tests (§6).** Spawn a fresh sub-agent
+   that did NOT write these tests and shares none of your context; give it only the test class and the §6
+   rubric and have it score the added diff. Act on ITS reward, not your own opinion. If the reward is below
+   `1.0`, delegate fixes for the offending lines to a writer sub-agent (without dropping a kill) and re-judge,
+   until the judge returns `1.0`.
+6. You are done when the whole-class build is green, the mutation score is up, AND the judge's reward is `1.0`.
+For a tiny class (1-3 methods) just write the tests yourself, then STILL spawn a separate judge to score them
+(never grade your own work); the delegation overhead only pays off past
 one context's worth of work.
 
 **Make the loop cheap so you can be exhaustive:** add **`-DwithHistory=true`** to your iterative PIT
@@ -194,11 +200,14 @@ discarded as BROKE_BUILD.
 ## 6. Mergeability reward: a green test a maintainer won't merge scores nothing
 Mutation score makes a test **strong**; it does not make it **mergeable**. Maintainers reject tests that
 reach into internals, assert nothing, or flake, so "avoid that wart" is empty advice unless breaking it
-**costs reward**. **Score every test file you touch by your own judgment, no tooling required.** This
-skill ships as a pure rubric: the environment running it may have no Python, no install step, nothing but
-you and the file, so *you* are the judge. Read the test diff **you added** (compare against the upstream
-copy of the file so pre-existing code is never counted), and for each rule below count the **lines of your
-added test code** that violate it.
+**costs reward**. **The agent that wrote the tests never scores them** -- grading your own work while you
+are driven to finish is a conflict of interest that inflates the score. A **separate judge sub-agent**, one
+that did NOT write the tests and shares none of your context, scores them instead. This
+skill ships as a pure rubric: the environment may have no Python, no install step, nothing but a fresh model
+and the file, so the judge is just another sub-agent applying the rules below. The judge reads the test diff
+**the writer added** (compare against the upstream copy of the file so pre-existing code is never counted),
+and for each rule below counts the **lines of added test code** that violate it. Its only job is an accurate
+penalty; it gets nothing from the tests passing, so it has no reason to under-count.
 
 **reward = 0.9 ^ (penalty)**: `1.0` means nothing broken; **penalty = the total number of LINES of bad
 test code**, summed across every quality rule. A rule's penalty is how many lines of *added* test code

@@ -1,6 +1,6 @@
 ---
 name: improve-java-tests
-description: Raise a Java (Maven or Gradle) project's PIT mutation score by adding tests that make the suite DETECT the mutations it currently misses: asserting real behaviour, append-only, never weakening an existing test. Use when asked to improve mutation coverage or mutation score, strengthen a Java test suite that passes but does not assert much, or turn line coverage into real verification.
+description: Raise a Java (Maven or Gradle) project's PIT mutation score by adding tests that make the suite DETECT the mutations it currently misses: asserting real behaviour, append-only, never weakening an existing test. Use when asked to improve mutation coverage or mutation score, improve or strengthen the tests for a Java class (e.g. "improve java tests of com.foo.Bar"), strengthen a Java test suite that passes but does not assert much, or turn line coverage into real verification.
 ---
 
 # Improve a Java project's PIT mutation score
